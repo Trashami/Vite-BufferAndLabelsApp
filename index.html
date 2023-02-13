@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="author" content="Geo-Jason">
+    <title>GIS Templates App</title>
+</head>
+<body>
+    <calcite-shell content-behind hidden>
+        <div slot="header" id="header">
+            <div id="welcomeMessage"></div>
+            <calcite-button id="btnAuth">Log Out</calcite-button>
+            <h2 id="header-title"></h2>
+        </div>
+
+        <calcite-shell-panel slot="primary-panel" detached>
+            <calcite-action-bar slot="action-bar">
+                <calcite-action data-action-id="layers" icon="layers" text="Layers"></calcite-action>
+                <calcite-action data-action-id="basemaps" icon="basemap" text="Basemaps"></calcite-action>
+                <calcite-action data-action-id="legend" icon="legend" text="Legend"></calcite-action>
+                <calcite-action data-action-id="bookmarks" icon="bookmark" text="Bookmarks"></calcite-action>
+                <calcite-action data-action-id="print" icon="print" text="Print"></calcite-action>
+                <calcite-action data-action-id="information" icon="information" text="Information"></calcite-action>
+            </calcite-action-bar>
+            <!-- Map-specific panels (each one provides a div for ArcGIS JavaScript API widgets) -->
+            <calcite-panel heading="Layers" height-scale="l" data-panel-id="layers" hidden>
+                <div id="layers-container"></div>
+            </calcite-panel>
+            <calcite-panel heading="Basemaps" height-scale="l" data-panel-id="basemaps" hidden>
+                <div id="basemaps-container"></div>
+            </calcite-panel>
+            <calcite-panel heading="Legend" height-scale="l" data-panel-id="legend" hidden>
+                <div id="legend-container"></div>
+            </calcite-panel>
+            <calcite-panel heading="Bookmarks" height-scale="l" data-panel-id="bookmarks" hidden>
+                <div id="bookmarks-container"></div>
+            </calcite-panel>
+            <calcite-panel heading="Print" height-scale="l" data-panel-id="print" hidden>
+                <div id="print-container"></div>
+            </calcite-panel>
+            <!-- Info panel (populates with info from the web map) -->
+            <calcite-panel heading="Getting Started" data-panel-id="information" hidden>
+                <div id="info-content">
+                    <calcite-label layout="inline">
+                        <b>Select a parcel to begin a workflow <br />Click here for more detailed instructions.</b>
+                    </calcite-label>
+                </div>
+            </calcite-panel>
+        </calcite-shell-panel>
+        <!-- create calcite panel for userLabelInput -->
+        <!--Create a table-->
+        <calcite-panel id="table" hidden>
+        </calcite-panel>
+        <div id="app"></div>
+    </calcite-shell>
+    <script type="module" src="/main.js"></script>
+</body>
+</html>

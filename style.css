@@ -1,0 +1,219 @@
+@import url("https://js.arcgis.com/4.25/esri/themes/light/main.css");
+
+html,
+body,
+#app {
+    position: fixed;
+    padding: 0;
+    margin: 0;
+    height: 100%;
+    width: 100%;
+}
+
+.directions-display {
+    padding: 1rem;
+    font-size: 1.5rem;
+}
+
+
+#btnAuth {
+    right: 15px;
+    top: 15px;
+    margin: 0px;
+    position: absolute;
+    align-items: center;
+    display: flex;
+}
+
+calcite-loader {
+    align-self: center;
+    justify-self: center;
+}
+
+#header {
+    display: flex;
+    padding: 0 1rem;
+    background-color: var(--calcite-ui-foreground-1);
+}
+
+#header-controls {
+    display: flex;
+    margin-inline-start: auto;
+    align-self: center;
+}
+
+#coordinates-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--calcite-ui-foreground-1);
+    padding: 0 1rem;
+}
+
+.label-wrapper {
+    display: flex;
+    margin-inline: 1rem;
+    padding: 0.5rem;
+    border: 1px solid var(--calcite-ui-border-1);
+    cursor: pointer;
+}
+
+calcite-switch {
+    margin: 0 0.5rem;
+}
+
+#header-title {
+    margin-left: 1rem;
+    margin-right: 1rem;
+}
+
+#info-content {
+    padding: 0.75rem;
+}
+
+calcite-rating {
+    margin-top: 0.25rem;
+}
+
+#card-container {
+    display: block;
+    font-family: "MedievalSharp", cursive;
+    position: absolute;
+    overflow-y: hidden;
+    bottom: 0;
+    left: 50px;
+    z-index: 1000;
+    background: #222;
+    width: 500px;
+    color: #faebd7;
+    transition: all 0.4s ease-in-out;
+}
+
+#welcomeMessage {
+    display: block;
+    position: absolute;
+    right: 102px;
+    font-size: 15px;
+    font-weight: 600;
+    top: 24px;
+}
+
+.esri-view-width-xlarge .esri-popup__main-container,
+.esri-view-width-large .esri-popup__main-container,
+.esri-view-width-medium .esri-popup__main-container {
+    max-height: 650px !important;
+    max-width: 450px !important;
+    bottom: 5em
+}
+
+.scrollSection {
+    overflow: scroll;
+    width: inherit;
+    height: 300px;
+    overflow-x: hidden;
+    padding: 0.3em;
+}
+
+#sketchVM-controls {
+    width: 125%;
+    height: 300px;
+}
+
+#headingBlock {
+    padding-right: 2em;
+}
+
+#labelInput {
+    position: absolute;
+    top: 100px;
+    right: 50px;
+    z-index: 1000;
+    width: 500px;
+    padding: 0.5em;
+    font-family: "MedievalSharp", cursive;
+    font-size: 1.5em;
+    transition: all 0.4s ease-in-out;
+}
+
+#table {
+    position: absolute;
+    font-family: "MedievalSharp", cursive;
+    border-collapse: collapse;
+    width: 100%;
+    z-index: 1000;
+}
+
+a.download-link {
+    font-size: 16px;
+    padding: 12px 24px;
+    border-radius: 4px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+    position: absolute;
+    top: -50px;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 8px;
+    animation: move-in 1s ease-out;
+    animation-fill-mode: forwards;
+    z-index: 1000;
+    position: absolute;
+}
+
+    a.download-link:hover {
+        background-color: #45a049;
+    }
+
+
+.printPreview {
+    display: none;
+    position: fixed !important;
+    top: 50vh;
+    left: 50vw;
+    width: 750px;
+    height: 720px;
+    background-color: rgba(65,65,65,0.5);
+    z-index: 500;
+    text-align: center;
+    margin-left: -355px;
+    margin-top: -305px;
+    color: white;
+    font-size: 2em;
+    font-weight: bold;
+    border: solid 4px white;
+    pointer-events: none !important;
+    border-radius: 10px;
+    box-shadow: 0 0 10px 5px rgba(0,0,0,0.3);
+}
+
+.closeBtn {
+    margin-top: -145px !important;
+    font-size: 24px !important;
+    pointer-events: auto !important;
+    background-color: #607d8b00 !important;
+    width: 35px !important;
+    margin-left: 708px !important;
+    border: none !important;
+}
+
+    .closeBtn:hover {
+        font-size: 30px !important;
+        margin-top: -148px !important;
+    }
+
+@keyframes move-in {
+    from {
+        top: -50px;
+    }
+
+    to {
+        top: 0px;
+    }
+}
+
+a .download-link:hover {
+    background-color: #3e8e41;
+}
