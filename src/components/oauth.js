@@ -5,7 +5,7 @@ import Portal from '@arcgis/core/portal/Portal';
 export const initialize = (appId) => {
     const oauthInfo = new OAuthInfo({
         appId,
-        portalUrl: 'https://iportal.tularecounty.ca.gov/iportal'
+        portalUrl: 'https://gisportal.co.fresno.ca.us/portal/'
     });
     IdentityManager.registerOAuthInfos([oauthInfo]);
     return oauthInfo;

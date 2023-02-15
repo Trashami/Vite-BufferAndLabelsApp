@@ -610,10 +610,6 @@ async function loadApp() {
             let user = await fetchUser(PORTAL_URL);
             if (oauthInfo._oAuthCred.userId === 'JTromborg1') {
                 oauthInfo._oAuthCred.userId = 'GeoJason';
-            } else if (oauthInfo._oAuthCred.userId === 'SBrogan') {
-                oauthInfo._oAuthCred.userId = 'Fingal';
-            } else if (oauthInfo._oAuthCred.userId === 'SJHazen') {
-                oauthInfo._oAuthCred.userId = 'Kycius';
             } else {
                 oauthInfo._oAuthCred.userId
             }
