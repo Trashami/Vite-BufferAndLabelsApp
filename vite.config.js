@@ -1,8 +1,17 @@
-export default ({ command }) => ({
-    base: command === 'serve' ? '' : './',
-    publicDir: 'fake_dir_not_using_public_so_dont_copy_data',
-    build: {
-        manifest: true,
-        outDir: 'public/',
-    }
-})
+
+import { defineConfig } from 'vite';
+import copy from 'rollup-plugin-copy';
+
+export default defineConfig({
+    plugins: [
+        copy({
+            // copy over the calcite-components assets
+            targets: [
+                {
+                    src: 'node_modules/@esri/calcite-components/dist/calcite/assets/',
+                    dest: 'public/'
+                }
+            ]
+        })
+    ]
+});
