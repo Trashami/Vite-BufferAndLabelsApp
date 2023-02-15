@@ -18,7 +18,6 @@ import Bookmarks from "@arcgis/core/widgets/Bookmarks";
 import Sketch from "@arcgis/core/widgets/Sketch";
 import Expand from "@arcgis/core/widgets/Expand";
 import { setAssetPath } from '@esri/calcite-components/dist/components';
-import "@esri/calcite-components";
 import "@esri/calcite-components/dist/components/calcite-button";
 import "@esri/calcite-components/dist/components/calcite-icon";
 import "@esri/calcite-components/dist/components/calcite-shell";
@@ -27,25 +26,20 @@ import "@esri/calcite-components/dist/components/calcite-panel";
 import "@esri/calcite-components/dist/components/calcite-loader";
 import "@esri/calcite-components/dist/components/calcite-action";
 import "@esri/calcite-components/dist/components/calcite-action-bar";
-import "@esri/calcite-components/dist/components/calcite-panel";
 import "@esri/calcite-components/dist/components/calcite-label";
 import "@esri/calcite-components/dist/calcite/calcite.css";
 import interact from 'interactjs';
 import { initialize, checkCurrentStatus, signIn, signOut, fetchUser } from '/src/components/oauth.js';
 import { generateExcelFile } from '/src/components/generateExcelFile.js';
+import symbol from '/src/components/symbology.js';
 import './style.css';
 
-setAssetPath(location.href + 'public/');
+setAssetPath(location.href);
 
 const APP_ID = import.meta.env.VITE_APP_ID;
 const PORTAL_URL = import.meta.env.VITE_PORTAL_URL;
 const WEBMAP_ID = import.meta.env.VITE_WEBMAP_ID;
-const PARCEL_URL = import.meta.env.VITE_FEATURE_LAYER_1;
-const printURL = import.meta.env.VITE_PRINT_URL;
-
-const loader = document.createElement('calcite-loader');
-document.body.appendChild(loader);
-loader.active = true;
+const PARCEL_URL = import.meta.env.VITE_PARCEL_LAYER;
 
 const btnAuth = document.getElementById('btnAuth');
 const createLabelDiv = document.getElementById("labelInput");
@@ -66,22 +60,9 @@ let selected;
 let thisParcel;
 let graphic;
 //let projectSite;
-let agent;;
+let printURL = "https://ihost.tularecounty.ca.gov/ihost/rest/services/RMA/RMATemplatesApp/GPServer/Export%20Web%20Map";
+let agent;
 
-var symbol = new SimpleFillSymbol();
-var line = new SimpleLineSymbol();
-line.color = new Color([0, 0, 0, .75]);
-line.width = 1.75;
-symbol.color = new Color([0, 0, 0, .25]);
-symbol.outline.color = line.color;
-symbol.outline.width = line.width;
-
-var projectSite = new SimpleFillSymbol();
-projectSite.color = new Color([5, 120, 50, .2]);
-projectSite.outline.color = line.color;
-
-var highlightSymbol = new SimpleFillSymbol();
-highlightSymbol.color = new Color([0, 0, 0, .2]);
 
 const bufferParcel = {
     title: "Buffer",
@@ -133,472 +114,516 @@ const drawOnGraphicsLayer = new GraphicsLayer({
 });
 
 async function loadMap() {
+    try {
 
-    const webmapId = new URLSearchParams(window.location.search).get("webmap")
-        ?? WEBMAP_ID;
+        const webmapId = new URLSearchParams(window.location.search).get("webmap")
+            ?? WEBMAP_ID;
 
-    const webmap = new WebMap({
-        portalItem: {
-            id: webmapId,
-            portal: {
-                url: PORTAL_URL
+        const webmap = new WebMap({
+            portalItem: {
+                id: webmapId,
+                portal: {
+                    url: PORTAL_URL
+                }
             }
-        }
-    });
-
-    const view = new MapView({
-        map: webmap,
-        container: 'app',
-        highlightOptions: {
-            color: [0, 0, 0,],
-            fillOpacity: .1
-        },
-        padding: {
-            left: 49
-        },
-        popup: {
-
-            dockEnabled: true,
-            //visible: false,
-            dockOptions: {
-                position: "bottom-right",
-                buttonEnabled: true,
-                breakpoint: false
-            }
-        },
-        constraints: {
-            rotationEnabled: false
-        },
-        //resizeAlign: "left"
-    });
-
-    view.map.add(bufferLayer);
-    view.map.add(intersectedParcels);
-    view.map.add(parcelsLayer);
-    view.map.add(selectSite);
-    view.map.add(drawOnGraphicsLayer);
-
-    const search = new Search({
-        view: view,
-        popupEnabled: true,
-        sources: [{
-            layer: parcelsLayer,
-            seachFields: ["parcelid"],
-            displayField: "parcelid",
-            outFields: ["parcelid"],
-            exactMatch: false,
-            name: "Tulare County Assessor Parcel Number",
-            suggestionsEnabled: true
-        }],
-        allPlaceholder: "APN or Address"
-    });
-
-    view.ui.add(search, 'top-right');
-
-    view.popup.on('trigger-action', (event) => {
-        view.popup.dockEnabled = true;
-        view.popup.dockOptions.position = "bottom-right";
-        if (event.action.id === "userIconToCreateBuffer") {
-            selectSite.removeAll();
-            intersectedParcels.removeAll();
-            var bufferValueInput = document.getElementById("bufferDistanceInput");
-            var bufferUnitInput = document.getElementById("bufferDistanceUnits");
-            bufferDistanceValue = bufferValueInput.value
-            bufferDistanceUnits = bufferUnitInput.selectedOptions[0].value
-            bufferThisParcel(thisParcel);
-        }
-    });
-
-    view.popup.on('trigger-action', (event) => {
-        if (event.action.id === "userIconToDuplicate") {
-            var thisParcel = view.popup.selectedFeature.attributes.apn;
-            var thisOwner = view.popup.selectedFeature.attributes.m1_owner;
-            var thisCareOf = view.popup.selectedFeature.attributes.m2_careof;
-            var thisAddress = view.popup.selectedFeature.attributes.m3_street;
-            var thisCity = view.popup.selectedFeature.attributes.m4_city;
-            navigator.clipboard.writeText(thisParcel + '\n' + thisOwner + '\n' + thisCareOf + '\n' + thisAddress + '\n' + thisCity);
-        }
-    });
-
-    view.popup.on('trigger-action', (event) => {
-        if (event.action.id === "userIconToReset") {
-            bufferLayer.removeAll();
-            drawOnGraphicsLayer.removeAll();
-            view.popup.close();
-            //remove highlights
-            view.graphics.removeAll();
-            removeHighlights();
-            clearHighlightData();
-            selectSite.removeAll();
-            intersectedParcels.removeAll();
-            var downloadLink = document.getElementsByClassName("download-link");
-            if (downloadLink.length > 0) {
-                downloadLink[0].remove();
-            }
-        }
-    });
-
-    btnAuth.addEventListener('click', () => {
-        signOut();
-    });
-
-    const basemaps = new BasemapGallery({
-        view,
-        container: "basemaps-container",
-    });
-
-    const bookmarks = new Bookmarks({
-        view,
-        container: "bookmarks-container",
-        editingEnabled: true
-    });
-
-    const layerList = new LayerList({
-        view,
-        selectionEnabled: true,
-        container: "layers-container"
-    });
-
-    const legend = new Legend({
-        view,
-        container: "legend-container"
-    });
-
-    const cte = [
-        {
-            "Title": ""
-        },
-        {
-            "CaseNum": ""
-        },
-        {
-            "ParcelID": ""
-        },
-        {
-            "Applicant": ""
-        },
-        {
-            "Owner": ""
-        },
-        {
-            "Address": ""
-        },
-        {
-            "CSZ": ""
-        },
-        {
-            "Supervisor": ""
-        },
-        {
-            "Agent": ""
-        }
-    ];
-
-    const print = new Print({
-        view: view,
-        container: "print-container",
-        printServiceUrl: printURL,
-        templateOptions: {
-            //title: "",
-            format: "PDF",
-            layout: "rma_print_template",
-            customTextElements: cte,
-            scaleEnabled: true,
-        }
-    });
-
-    var printBtn = document.createElement("button");
-    printBtn.innerHTML = "Print Preview";
-    printBtn.classList.add("esri-widget", "esri-button", "esri-interactive");
-    printBtn.style.marginBottom = "10px";
-    document.getElementById("print-container").appendChild(printBtn);
-
-    const printPreview = document.createElement("div");
-    printPreview.classList.add("printPreview");
-    printPreview.innerHTML = "<h1>Print Preview</h1>";
-
-    var closeBtn = document.createElement("button");
-    closeBtn.innerHTML = " <strong>x</strong> ";
-    closeBtn.classList.add("esri-widget", "esri-button", "esri-interactive", "closeBtn");
-    printPreview.appendChild(closeBtn);
-
-    printBtn.addEventListener("click", function () {
-        printPreview.style.display = "block";
-        view.ui.add(printPreview, "manual");
-    });
-
-    closeBtn.addEventListener("click", function () {
-        printPreview.style.display = "none";
-        view.ui.remove(printPreview);
-    });
-
-    view.watch("scale", function (scale) {
-        print.templateOptions.scale = scale;
-    });
-
-    const sketch = new Sketch({
-        view,
-        layer: drawOnGraphicsLayer,
-    });
-
-    const expandSketch = new Expand({
-        view,
-        content: sketch
-    });
-
-    view.ui.add(expandSketch, "top-right");
-
-    webmap.when(() => {
-        const { title } = webmap.portalItem;
-        document.querySelector("#header-title").textContent = title;
-        let activeWidget;
-
-        const handleActionBarClick = ({ target }) => {
-            if (target.tagName !== "CALCITE-ACTION") {
-                return;
-            }
-            if (activeWidget) {
-                document.querySelector(`[data-action-id=${activeWidget}]`).active = false;
-                document.querySelector(`[data-panel-id=${activeWidget}]`).hidden = true;
-            }
-            const nextWidget = target.dataset.actionId;
-            if (nextWidget !== activeWidget) {
-                document.querySelector(`[data-action-id=${nextWidget}]`).active = true;
-                document.querySelector(`[data-panel-id=${nextWidget}]`).hidden = false;
-                activeWidget = nextWidget;
-            } else {
-                activeWidget = null;
-            }
-        };
-        document.querySelector("calcite-action-bar").addEventListener("click", handleActionBarClick);
-        let actionBarExpanded = false;
-        document.addEventListener("calciteActionBarToggle", event => {
-            actionBarExpanded = !actionBarExpanded;
-            view.padding = {
-                left: actionBarExpanded ? 135 : 45
-            };
         });
-        document.querySelector("calcite-shell").hidden = false;
-        document.querySelector("calcite-loader").hidden = true;
-    });
 
+        const view = new MapView({
+            map: webmap,
+            container: 'app',
+            highlightOptions: {
+                color: [0, 0, 0,],
+                fillOpacity: .1
+            },
+            padding: {
+                left: 49
+            },
+            popup: {
 
-    view.when(async () => {
-        layerView = await view.whenLayerView(parcelsLayer);
-        view.on('click', async (event) => {
-            //if altKey is pressed dont do anything
-            if (event.altKey) {
-                return;
+                dockEnabled: true,
+                //visible: false,
+                dockOptions: {
+                    position: "bottom-right",
+                    buttonEnabled: true,
+                    breakpoint: false
+                }
+            },
+            constraints: {
+                rotationEnabled: false
+            },
+            spatialReference: {
+                wkid: 3857
             }
-            const options = {
-                include: parcelsLayer
-            };
-            const { results } = await view.hitTest(event, options);
+            //resizeAlign: "left"
+        });
+
+        view.map.add(bufferLayer);
+        view.map.add(intersectedParcels);
+        view.map.add(parcelsLayer);
+        view.map.add(selectSite);
+        view.map.add(drawOnGraphicsLayer);
+
+        const search = new Search({
+            view: view,
+            popupEnabled: true,
+            sources: [{
+                layer: parcelsLayer,
+                seachFields: ["parcelid"],
+                displayField: "parcelid",
+                outFields: ["parcelid"],
+                exactMatch: false,
+                name: "Tulare County Assessor Parcel Number",
+                suggestionsEnabled: true
+            }],
+            allPlaceholder: "APN or Address"
+        });
+
+        view.ui.add(search, 'top-right');
+
+        view.popup.on('trigger-action', (event) => {
             try {
-                graphic = results[0];
-                if (selected) {
-                    selected.remove();
-                    //bufferLayer.removeAll()
+                view.popup.dockEnabled = true;
+                view.popup.dockOptions.position = "bottom-right";
+                if (event.action.id === "userIconToCreateBuffer") {
+                    selectSite.removeAll();
+                    intersectedParcels.removeAll();
+                    var bufferValueInput = document.getElementById("bufferDistanceInput");
+                    var bufferUnitInput = document.getElementById("bufferDistanceUnits");
+                    bufferDistanceValue = bufferValueInput.value
+                    bufferDistanceUnits = bufferUnitInput.selectedOptions[0].value
+                    bufferThisParcel(thisParcel);
                 }
-                //selected = layerView.highlight(graphic);
-                thisParcel = graphic.graphic;
-                cte[2].ParcelID = thisParcel.attributes.apn;
-                cte[4].Owner = thisParcel.attributes.m1_owner;
-                //cte[2].Supervisor = need to create an intersect to the supervisorial layer. 
-                cte[5].Address = thisParcel.attributes.m3_street;
-                cte[6].CSZ = thisParcel.attributes.m_add_2;
-                cte[8].Agent = agent;
-                // fix title from a drop down 
-
-            } catch (err) {
-                console.log("Error on selecting a parcel: " + err);
-
+            } catch (error) {
+                console.error(" Error on creating a buffer: " + error);
             }
-        })
-    });
-
-    loader.active = false
-
-    async function bufferThisParcel(thisParcel) {
-        if (bufferedParcel) {
-            bufferLayer.removeAll();
-        }
-
-        bufferedParcel = await geometryEngineAsync.geodesicBuffer(thisParcel.geometry, bufferDistanceValue, bufferDistanceUnits, true);
-
-        selectedParcel = new Graphic({
-            geometry: thisParcel.geometry,
-            symbol: symbol,
         });
 
-        bufferedGraphic = new Graphic({
-            geometry: bufferedParcel,
-            symbol: symbol,
+
+        view.popup.on('trigger-action', (event) => {
+            try {
+                if (event.action.id === "userIconToDuplicate") {
+                    var thisParcel = view.popup.selectedFeature.attributes.apn;
+                    var thisOwner = view.popup.selectedFeature.attributes.m1_owner;
+                    var thisCareOf = view.popup.selectedFeature.attributes.m2_careof;
+                    var thisAddress = view.popup.selectedFeature.attributes.m3_street;
+                    var thisCity = view.popup.selectedFeature.attributes.m4_city;
+                    navigator.clipboard.writeText(thisParcel + '\n' + thisOwner + '\n' + thisCareOf + '\n' + thisAddress + '\n' + thisCity);
+                }
+            } catch (error) {
+                console.error("Error on copying selected data to clipboard: " + error);
+            }
         });
 
-        bufferLayer.add(bufferedGraphic);
-        selectSite.add(selectedParcel)
-        bufferLayer.title = "Buffered Parcel";
-        selectSite.title = "Selected Parcel";
-        await view.goTo({
-            target: bufferedParcel.extent,
-        })
-        removeHighlights();
-        clearHighlightData()
-        buildHighlights();
-    }
 
-    async function buildHighlights(selectedResults) {
-        const query = parcelsLayer.createQuery();
-        query.geometry = bufferedParcel;
-        const results = await parcelsLayer.queryFeatures(query);
-        selectedResults = await results.features;
-        updatehighlights(selectedResults);
-    }
-
-    async function updatehighlights(selectedResults) {
-        view.whenLayerView(parcelsLayer).then(await function () {
-            for (let i = 0; i < selectedResults.length; i++) {
-                var feature = selectedResults[i];
-                highlightData.push(selectedResults[i].attributes)
-                objectId.push(feature.attributes["objectid"])
-                parcelsIntersected = new Graphic({
-                    geometry: selectedResults[i].geometry,
-                    symbol: highlightSymbol,
-                    attributes: selectedResults[i].attributes
-                });
-                intersectedParcels.add(parcelsIntersected)
-            }
-            intersectedParcels.title = "Intersected Parcels";
-            handler.length = 0;
-        }).then(function () {
-            pushHighlights(layerView).then
-            generateExcelFile(highlightData);
-        })
-    }
-
-    async function pushHighlights(layerView) {
-        handler.push(layerView.highlight(objectId))
-    }
-
-    view.on("click", async function (event) {
-        if (event.native.ctrlKey === true) {
-            await view.hitTest(event).then(function (response) {
-                if (response.results.length > 0) {
-                    var feature = response.results.filter(function (result) {
-                        return result.graphic.layer === parcelsLayer;
-                    })[0].graphic;
-                    objectId.push(feature.attributes["objectid"]);
-                    parcelsIntersected = new Graphic({
-                        geometry: feature.geometry,
-                        symbol: highlightSymbol,
-                        attributes: feature.attributes
-                    });
-                    intersectedParcels.add(parcelsIntersected)
-                }
-            }).then(function () {
-                handler.push(layerView.highlight(objectId));
-                generateExcelFile(highlightData);
-            })
-        }
-    })
-
-    view.on("click", async function (event) {
-        if (event.native.altKey === true) {
-            await view.hitTest(event).then(function (response) {
-                if (response.results.length > 0) {
-                    var feature = response.results.filter(function (result) {
-                        return result.graphic.layer === parcelsLayer;
-                    })[0].graphic;
-                    var oid = feature.attributes['objectid']
-                    var index = objectId.indexOf(oid);
-                    objectId.splice(index, 1)
-                    handler.forEach(x => x.remove());
-                    console.log(intersectedParcels)
-                    console.log(oid)
-                    var thisIndex = intersectedParcels.graphics.findIndex(x => x.attributes.objectid === oid)
-                    console.log(thisIndex)
-                    intersectedParcels.remove(intersectedParcels.graphics.items[thisIndex])
-                    console.log(highlightData)
-                }
-            }).then(function () {
-                handler.push(layerView.highlight(objectId));
-                generateExcelFile(highlightData);
-            })
-        }
-    })
-
-    async function clearHighlightData() {
-        highlightData.length = 0;
-        objectId.length = 0;
-    }
-
-    async function removeHighlights() {
-        await handler.forEach(x => x.remove());
-        handler.length = 0;
-    }
-
-    //
-
-    const popupTargetSelectionString = ".esri-component.esri-popup";
-    // const currentPosition = ""
-    let position = { x: 0, y: 0 };
-    const setupInteractJs = () => {
-        if (interact.isSet(popupTargetSelectionString)) {
-            interact(popupTargetSelectionString).unset();
-        }
-
-        position = { x: 0, y: 0 };
-        interact(popupTargetSelectionString).draggable({
-            listeners: {
-                move(event) {
-                    // currentPosition = popup.GetPosition();
-                    const elements = document.querySelectorAll(".esri-popup__pointer");
-                    elements[0].style.display = "none";
-                    position.x += event.dx;
-                    position.y += event.dy;
-                    if (position.x) {
-                        //view.popup.dockEnabled = false;
-                        event.target.style.transform = `translate(${position.x}px, ${position.y}px)`;
+        view.popup.on('trigger-action', (event) => {
+            try {
+                if (event.action.id === "userIconToReset") {
+                    bufferLayer.removeAll();
+                    drawOnGraphicsLayer.removeAll();
+                    view.popup.close();
+                    //remove highlights
+                    view.graphics.removeAll();
+                    removeHighlights();
+                    clearHighlightData();
+                    selectSite.removeAll();
+                    intersectedParcels.removeAll();
+                    var downloadLink = document.getElementsByClassName("download-link");
+                    if (downloadLink.length > 0) {
+                        downloadLink[0].remove();
                     }
                 }
+            } catch (error) {
+                console.error("Error on reset: " + error);
             }
         });
-    };
 
-    view.when(() => {
-        view.popup.watch("features", (features) => {
-            if (features.length === 0) {
-                //view.popup.dockEnabled = true;
-                const elements = document.querySelectorAll(popupTargetSelectionString);
-                if (elements && elements.length > 0) {
-                    elements[0].style.transform = `translate(0px, 0px)`;
-                }
-            } else {
-                setupInteractJs();
+
+        btnAuth.addEventListener('click', () => {
+            signOut();
+        });
+
+        const basemaps = new BasemapGallery({
+            view,
+            container: "basemaps-container",
+        });
+
+        const bookmarks = new Bookmarks({
+            view,
+            container: "bookmarks-container",
+            editingEnabled: true
+        });
+
+        const layerList = new LayerList({
+            view,
+            selectionEnabled: true,
+            container: "layers-container"
+        });
+
+        const legend = new Legend({
+            view,
+            container: "legend-container"
+        });
+
+        const cte = [
+            {
+                "Title": ""
+            },
+            {
+                "CaseNum": ""
+            },
+            {
+                "ParcelID": ""
+            },
+            {
+                "Applicant": ""
+            },
+            {
+                "Owner": ""
+            },
+            {
+                "Address": ""
+            },
+            {
+                "CSZ": ""
+            },
+            {
+                "Supervisor": ""
+            },
+            {
+                "Agent": ""
+            }
+        ];
+
+        const print = new Print({
+            view: view,
+            container: "print-container",
+            printServiceUrl: printURL,
+            templateOptions: {
+                //title: "",
+                format: "PDF",
+                layout: "rma_print_template",
+                customTextElements: cte,
+                scaleEnabled: true,
             }
         });
-    });
+
+        var printBtn = document.createElement("button");
+        printBtn.innerHTML = "Print Preview";
+        printBtn.classList.add("esri-widget", "esri-button", "esri-interactive");
+        printBtn.style.marginBottom = "10px";
+        document.getElementById("print-container").appendChild(printBtn);
+
+        const printPreview = document.createElement("div");
+        printPreview.classList.add("printPreview");
+        printPreview.innerHTML = "<h1>Print Preview</h1>";
+
+        var closeBtn = document.createElement("button");
+        closeBtn.innerHTML = " <strong>x</strong> ";
+        closeBtn.classList.add("esri-widget", "esri-button", "esri-interactive", "closeBtn");
+        printPreview.appendChild(closeBtn);
+
+        printBtn.addEventListener("click", function () {
+            printPreview.style.display = "block";
+            view.ui.add(printPreview, "manual");
+        });
+
+        closeBtn.addEventListener("click", function () {
+            printPreview.style.display = "none";
+            view.ui.remove(printPreview);
+        });
+
+        view.watch("scale", function (scale) {
+            print.templateOptions.scale = scale;
+        });
+
+        const sketch = new Sketch({
+            view,
+            layer: drawOnGraphicsLayer,
+        });
+
+        const expandSketch = new Expand({
+            view,
+            content: sketch
+        });
+
+        view.ui.add(expandSketch, "top-right");
+
+        webmap.when(() => {
+            const { title } = webmap.portalItem;
+            document.querySelector("#header-title").textContent = title;
+            let activeWidget;
+
+            const handleActionBarClick = ({ target }) => {
+                if (target.tagName !== "CALCITE-ACTION") {
+                    return;
+                }
+                if (activeWidget) {
+                    document.querySelector(`[data-action-id=${activeWidget}]`).active = false;
+                    document.querySelector(`[data-panel-id=${activeWidget}]`).hidden = true;
+                }
+                const nextWidget = target.dataset.actionId;
+                if (nextWidget !== activeWidget) {
+                    document.querySelector(`[data-action-id=${nextWidget}]`).active = true;
+                    document.querySelector(`[data-panel-id=${nextWidget}]`).hidden = false;
+                    activeWidget = nextWidget;
+                } else {
+                    activeWidget = null;
+                }
+            };
+            document.querySelector("calcite-action-bar").addEventListener("click", handleActionBarClick);
+            let actionBarExpanded = false;
+            document.addEventListener("calciteActionBarToggle", event => {
+                actionBarExpanded = !actionBarExpanded;
+                view.padding = {
+                    left: actionBarExpanded ? 135 : 45
+                };
+            });
+            document.querySelector("calcite-shell").hidden = false;
+        });
+
+        view.when(async () => {
+            layerView = await view.whenLayerView(parcelsLayer);
+            view.on('click', async (event) => {
+                //if altKey is pressed dont do anything
+                if (event.altKey) {
+                    return;
+                }
+                const options = {
+                    include: parcelsLayer
+                };
+                const { results } = await view.hitTest(event, options);
+                try {
+                    graphic = results[0];
+                    if (selected) {
+                        selected.remove();
+                        //bufferLayer.removeAll()
+                    }
+                    //selected = layerView.highlight(graphic);
+                    thisParcel = graphic.graphic;
+                    cte[2].ParcelID = thisParcel.attributes.apn;
+                    cte[4].Owner = thisParcel.attributes.m1_owner;
+                    //cte[2].Supervisor = need to create an intersect to the supervisorial layer. 
+                    cte[5].Address = thisParcel.attributes.m3_street;
+                    cte[6].CSZ = thisParcel.attributes.m_add_2;
+                    cte[8].Agent = agent;
+                    // fix title from a drop down 
+
+                } catch (err) {
+                    console.log("Error on selecting a parcel: " + err);
+
+                }
+            })
+        });
+
+        document.querySelector("calcite-loader").active = false;
+
+        async function bufferThisParcel(thisParcel) {
+            try {
+                if (bufferedParcel) {
+                    bufferLayer.removeAll();
+                }
+                bufferedParcel = await geometryEngineAsync.geodesicBuffer(thisParcel.geometry, bufferDistanceValue, bufferDistanceUnits, true);
+                selectedParcel = new Graphic({
+                    geometry: thisParcel.geometry,
+                    symbol: symbol.symbol,
+                });
+                bufferedGraphic = new Graphic({
+                    geometry: bufferedParcel,
+                    symbol: symbol.symbol,
+                });
+                bufferLayer.add(bufferedGraphic);
+                selectSite.add(selectedParcel)
+                bufferLayer.title = "Buffered Parcel";
+                selectSite.title = "Selected Parcel";
+                await view.goTo({
+                    target: bufferedParcel.extent,
+                })
+                removeHighlights();
+                clearHighlightData()
+                buildHighlights();
+            } catch (error) {
+                console.error("Error on buffering a parcel: " + error);
+            }
+        }
+
+
+        async function buildHighlights(selectedResults) {
+            try {
+                const query = parcelsLayer.createQuery();
+                query.geometry = bufferedParcel;
+                const results = await parcelsLayer.queryFeatures(query);
+                selectedResults = await results.features;
+                updatehighlights(selectedResults);
+            } catch (error) {
+                console.error("Error on building highlights: " + error);
+            }
+        }
+
+
+        async function updatehighlights(selectedResults) {
+            try {
+                await view.whenLayerView(parcelsLayer).then(function () {
+                    for (let i = 0; i < selectedResults.length; i++) {
+                        var feature = selectedResults[i];
+                        highlightData.push(selectedResults[i].attributes)
+                        objectId.push(feature.attributes["objectid"])
+                        parcelsIntersected = new Graphic({
+                            geometry: selectedResults[i].geometry,
+                            symbol: symbol.highlightSymbol,
+                            attributes: selectedResults[i].attributes
+                        });
+                        intersectedParcels.add(parcelsIntersected)
+                    }
+                    intersectedParcels.title = "Intersected Parcels";
+                    handler.length = 0;
+                }).then(function () {
+                    pushHighlights(layerView).then
+                    generateExcelFile(highlightData);
+                })
+            } catch (error) {
+                console.error("Error on updating highlights: " + error);
+            }
+        }
+
+
+        async function pushHighlights(layerView) {
+            handler.push(layerView.highlight(objectId))
+        }
+
+        view.on("click", async function (event) {
+            if (event.native.ctrlKey === true) {
+                try {
+                    await view.hitTest(event).then(function (response) {
+                        if (response.results.length > 0) {
+                            var feature = response.results.filter(function (result) {
+                                return result.graphic.layer === parcelsLayer;
+                            })[0].graphic;
+                            objectId.push(feature.attributes["objectid"]);
+                            parcelsIntersected = new Graphic({
+                                geometry: feature.geometry,
+                                symbol: symbol.highlightSymbol,
+                                attributes: feature.attributes
+                            });
+                            intersectedParcels.add(parcelsIntersected)
+                        }
+                    }).then(function () {
+                        handler.push(layerView.highlight(objectId));
+                        generateExcelFile(highlightData);
+                    })
+                } catch (error) {
+                    console.error("Error on adding a parcel: " + error);
+                }
+            }
+        })
+
+
+        view.on("click", async function (event) {
+            if (event.native.altKey === true) {
+                try {
+                    await view.hitTest(event).then(function (response) {
+                        if (response.results.length > 0) {
+                            var feature = response.results.filter(function (result) {
+                                return result.graphic.layer === parcelsLayer;
+                            })[0].graphic;
+                            var oid = feature.attributes['objectid']
+                            var index = objectId.indexOf(oid);
+                            objectId.splice(index, 1)
+                            handler.forEach(x => x.remove());
+                            var thisIndex = intersectedParcels.graphics.findIndex(x => x.attributes.objectid === oid)
+                            intersectedParcels.remove(intersectedParcels.graphics.items[thisIndex])
+                        }
+                    }).then(function () {
+                        handler.push(layerView.highlight(objectId));
+                        generateExcelFile(highlightData);
+                    })
+                } catch (error) {
+                    console.error("Error on removing a parcel: " + error);
+                }
+            }
+        })
+
+
+        async function clearHighlightData() {
+            highlightData.length = 0;
+            objectId.length = 0;
+        }
+
+        async function removeHighlights() {
+            await handler.forEach(x => x.remove());
+            handler.length = 0;
+        }
+
+        const popupTargetSelectionString = ".esri-component.esri-popup";
+        // const currentPosition = ""
+        let position = { x: 0, y: 0 };
+        const setupInteractJs = () => {
+            if (interact.isSet(popupTargetSelectionString)) {
+                interact(popupTargetSelectionString).unset();
+            }
+
+            position = { x: 0, y: 0 };
+            interact(popupTargetSelectionString).draggable({
+                listeners: {
+                    move(event) {
+                        // currentPosition = popup.GetPosition();
+                        const elements = document.querySelectorAll(".esri-popup__pointer");
+                        elements[0].style.display = "none";
+                        position.x += event.dx;
+                        position.y += event.dy;
+                        if (position.x) {
+                            //view.popup.dockEnabled = false;
+                            event.target.style.transform = `translate(${position.x}px, ${position.y}px)`;
+                        }
+                    }
+                }
+            });
+        };
+
+        view.when(() => {
+            view.popup.watch("features", (features) => {
+                if (features.length === 0) {
+                    view.popup.dockEnabled = true;
+                    const elements = document.querySelectorAll(popupTargetSelectionString);
+                    if (elements && elements.length > 0) {
+                        elements[0].style.transform = `translate(0px, 0px)`;
+                    }
+                } else {
+                    setupInteractJs();
+                }
+            });
+        })
+    } catch (error) {
+        console.error("Error loading application: " + error)
+    }
 }
 
+
 async function loadApp() {
-    const oauthInfo = initialize(APP_ID, PORTAL_URL);
-    let credential = await checkCurrentStatus(oauthInfo);
-    if (!credential) {
-        credential = await signIn(oauthInfo);
-    }
-    if (credential) {
-        loadMap();
-        let user = await fetchUser(PORTAL_URL);
-        if (oauthInfo._oAuthCred.userId === 'JTromborg1') {
-            oauthInfo._oAuthCred.userId = 'GeoJason';
-        } else {
-            oauthInfo._oAuthCred.userId
+    try {
+        const oauthInfo = initialize(APP_ID, PORTAL_URL);
+        let credential = await checkCurrentStatus(oauthInfo);
+        if (!credential) {
+            credential = await signIn(oauthInfo);
         }
-        btnAuth.innerText = `Log Out`;
-        welcomeMessage.innerText = `Welcome, ${oauthInfo._oAuthCred.userId}`;
-        console.log(oauthInfo._oAuthCred.userId)
-        agent = oauthInfo._oAuthCred.userId
+        if (credential) {
+            loadMap();
+            let user = await fetchUser(PORTAL_URL);
+            if (oauthInfo._oAuthCred.userId === 'JTromborg1') {
+                oauthInfo._oAuthCred.userId = 'GeoJason';
+            } else if (oauthInfo._oAuthCred.userId === 'SBrogan') {
+                oauthInfo._oAuthCred.userId = 'Fingal';
+            } else if (oauthInfo._oAuthCred.userId === 'SJHazen') {
+                oauthInfo._oAuthCred.userId = 'Kycius';
+            } else {
+                oauthInfo._oAuthCred.userId
+            }
+            btnAuth.innerText = `Log Out`;
+            welcomeMessage.innerText = `Welcome, ${oauthInfo._oAuthCred.userId}`;
+            console.log(oauthInfo._oAuthCred.userId)
+            agent = oauthInfo._oAuthCred.userId
+        }
+    } catch (error) {
+        console.error("Error authorizing user on the Portal: " + error);
     }
 }
 
