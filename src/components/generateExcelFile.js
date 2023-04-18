@@ -29,7 +29,7 @@ export function generateExcelFile(highlightData) {
     }
     const downloadButton = document.createElement("a");
     downloadButton.innerHTML = "Download Mailing Labels";
-
+    
     downloadButton.classList.add("download-link");
     // add an event listener to the button
     downloadButton.addEventListener("click", function () {
